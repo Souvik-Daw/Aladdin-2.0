@@ -213,7 +213,7 @@ def support_by_hours(symbol,time):
     elif(symbol == 'ETHUSDT'):
         difference = 20
     else:
-        difference = 20
+        difference = 2
     
     print(difference)
 
@@ -222,7 +222,7 @@ def support_by_hours(symbol,time):
         name = str(int(current)) +" at "+ str(int(support))+".png"
         safegraph(df, slope_final, intercept_final,name)
         #Send telegram message
-        message = "BTC Chart at support level at 1 hour tf"
+        message = symbol + " Chart at support level at "+ time +" hour tf"
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text={message}"
         r= requests.get(url)
         print(r.json())
@@ -238,17 +238,32 @@ while True:
     support_by_hours('BTCUSDT','3')
     support_by_hours('BTCUSDT','4')
     support_by_hours('BTCUSDT','5')
+    support_by_hours('BTCUSDT','6')
+    support_by_hours('BTCUSDT','7')
+    support_by_hours('BTCUSDT','8')
+    support_by_hours('BTCUSDT','9')
+    support_by_hours('BTCUSDT','10')
 
     support_by_hours('ETHUSDT','1')
     support_by_hours('ETHUSDT','2')
     support_by_hours('ETHUSDT','3')
     support_by_hours('ETHUSDT','4')
     support_by_hours('ETHUSDT','5')
+    support_by_hours('ETHUSDT','6')
+    support_by_hours('ETHUSDT','7')
+    support_by_hours('ETHUSDT','8')
+    support_by_hours('ETHUSDT','9')
+    support_by_hours('ETHUSDT','10')
 
     support_by_hours('SOLUSDT','1')
     support_by_hours('SOLUSDT','2')
     support_by_hours('SOLUSDT','3')
     support_by_hours('SOLUSDT','4')
     support_by_hours('SOLUSDT','5')
+    support_by_hours('SOLUSDT','6')
+    support_by_hours('SOLUSDT','7')
+    support_by_hours('SOLUSDT','8')
+    support_by_hours('SOLUSDT','9')
+    support_by_hours('SOLUSDT','10')
 
     #1 to 24 hours, week and month need to be added

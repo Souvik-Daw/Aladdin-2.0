@@ -219,7 +219,7 @@ def resistance_by_hours(symbol,time):
     elif(symbol == 'ETHUSDT'):
         difference = 20
     else:
-        difference = 20
+        difference = 2
     
     print(difference)
 
@@ -228,7 +228,7 @@ def resistance_by_hours(symbol,time):
         name = str(int(current)) +" at "+ str(int(support))+".png"
         safegraph(df, slope_final, intercept_final,name)
         #Send telegram message
-        message = "BTC Chart at resistance level at 1 hour tf"
+        message = symbol + " Chart at resistance level at "+ time +" hour tf"
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text={message}"
         r= requests.get(url)
         print(r.json())
@@ -244,17 +244,32 @@ while True:
     resistance_by_hours('BTCUSDT','3')
     resistance_by_hours('BTCUSDT','4')
     resistance_by_hours('BTCUSDT','5')
+    resistance_by_hours('BTCUSDT','6')
+    resistance_by_hours('BTCUSDT','7')
+    resistance_by_hours('BTCUSDT','8')
+    resistance_by_hours('BTCUSDT','9')
+    resistance_by_hours('BTCUSDT','10')
 
     resistance_by_hours('ETHUSDT','1')
     resistance_by_hours('ETHUSDT','2')
     resistance_by_hours('ETHUSDT','3')
     resistance_by_hours('ETHUSDT','4')
     resistance_by_hours('ETHUSDT','5')
+    resistance_by_hours('ETHUSDT','6')
+    resistance_by_hours('ETHUSDT','7')
+    resistance_by_hours('ETHUSDT','8')
+    resistance_by_hours('ETHUSDT','9')
+    resistance_by_hours('ETHUSDT','10')
 
     resistance_by_hours('SOLUSDT','1')
     resistance_by_hours('SOLUSDT','2')
     resistance_by_hours('SOLUSDT','3')
     resistance_by_hours('SOLUSDT','4')
     resistance_by_hours('SOLUSDT','5')
+    resistance_by_hours('SOLUSDT','6')
+    resistance_by_hours('SOLUSDT','7')
+    resistance_by_hours('SOLUSDT','8')
+    resistance_by_hours('SOLUSDT','9')
+    resistance_by_hours('SOLUSDT','10')
 
     #1 to 24 hours, week and month need to be added

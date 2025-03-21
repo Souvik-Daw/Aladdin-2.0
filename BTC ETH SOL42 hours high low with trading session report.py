@@ -92,13 +92,21 @@ def hours_42_high_low (symbol):
     # print(day_before_previous_day_low)
     # print(current_price)
 
-    if (abs(current_price-previous_day_high))<100:
+    difference = 0
+    if (symbol == 'BTCUSDT'):
+        difference = 100
+    elif(symbol == 'ETHUSDT'):
+        difference = 20
+    else:
+        difference = 2
+
+    if (abs(current_price-previous_day_high))<difference:
         print("close to previous_day_high")
-    if (abs(current_price-previous_day_low))<100:
+    if (abs(current_price-previous_day_low))<difference:
         print("close to previous_day_low")
-    if (abs(current_price-day_before_previous_day_high))<100:
+    if (abs(current_price-day_before_previous_day_high))<difference:
         print("close to day_before_previous_day_high")
-    if (abs(current_price-day_before_previous_day_low))<100:
+    if (abs(current_price-day_before_previous_day_low))<difference:
         print("close to day_before_previous_day_low")
 
 
