@@ -7,15 +7,3 @@ Features
 .42 hours high low alert 
 .Trading session open and close alert with report 
 .Telegram alert
-
-Aladdin 2.0 deployment
-. Change alert condition for ETH,BTC and SOL (0.10 % difference)
-. Add logger in .py files and final code check up
-. Install dependencies and create file 
-. Deploy .py files,3
-. Do initial testing of .py files
-. Check CPU useage
-. Observe for 3 days
-. Add 1 to 24 hours, 1 week and 1 month watcher
-. Check CPU useage
-. Observe for 3 more days

@@ -22,7 +22,7 @@ api_secret = 'xPqzQ87NvKFawOcYizIC81Ui3s7oQsBxPvXaD4t7LR85AtUhYeJL9XLnvwmoLPLN'
 
 #Telegram Bot
 TOKEN = "7440240128:AAHGgBidb-mEjSOfzWXJ2hzY8UupUDlvKEs"
-CHAT_ID = "5097888685"
+CHAT_ID = "-4629116369"
 
 # Initialize Binance client
 client = Client(api_key, api_secret)
@@ -81,7 +81,7 @@ def candlestick_ax(t, o, h, l, c):
     return ax
 
 def get_init_slope_intercept(df):
-    # best fit line
+    """Calculate initial best-fit resistance line using Linear Regression."""
     X = df[['loc_index']].values  # Independent variable
     y = df['mid'].values  # Dependent variable
 
@@ -93,18 +93,20 @@ def get_init_slope_intercept(df):
     slope = model.coef_[0]
     intercept = model.intercept_
 
-    best_fit = X*slope + intercept
+    best_fit = X * slope + intercept
 
-    df['candle_bottom'] = df[['open', 'close']].min(axis=1)
-    offsets = df['candle_bottom'].values - best_fit[:,0]
-    min_offset = min(offsets)
-    intercept_2 = intercept + min_offset
-    best_fit_2 = X*slope + intercept_2
+    # Use the highest price points to calculate resistance
+    df['candle_top'] = df[['open', 'close']].max(axis=1)
+
+    # Compute offsets to shift trendline down to touch candle tops
+    offsets = df['candle_top'].values - best_fit[:, 0]
+    max_offset = min(offsets)  # We take min(offsets) to lower the line
+    intercept_2 = intercept + max_offset  # Adjust intercept
 
     return slope, intercept_2
 
 def get_best_fit_slope_intercept(df):
-    # best fit line
+    """Calculate the initial best-fit line without adjustments."""
     X = df[['loc_index']].values  # Independent variable
     y = df['mid'].values  # Dependent variable
 
@@ -118,75 +120,80 @@ def get_best_fit_slope_intercept(df):
 
     return slope, intercept
 
-
-
-
-# Objective function to minimize: sum of squared differences
-def objective(params, X, candle_bottom):
+# Objective function to minimize: sum of squared differences for resistance line
+def objective(params, X, candle_top):
     m, b = params
     line = m * X + b
-    return np.sum((line - candle_bottom) ** 2)
+    return np.sum((line - candle_top) ** 2)  # Minimize distance from candle tops
 
-# Constraint function to ensure line stays below the candle bottom
-def constraint(params, X, candle_bottom):
+# Constraint function to ensure resistance line stays above candle tops
+def constraint(params, X, candle_top):
     m, b = params
     line = m * X + b
-    return candle_bottom - line  # We want all values of (candle_bottom - line) >= 0
+    return line - candle_top  # Ensure line >= candle_top
 
-
-def get_final_slope_intercept(df_new,slope_init, intercept_init):
-    # Initial parameters for optimization
+def get_final_slope_intercept(df_new, slope_init, intercept_init):
+    """Optimize the resistance trendline using scipy minimize."""
     initial_params = [slope_init, intercept_init]
     X = df_new[['loc_index']].values
 
-    # Defining constraints as a dictionary format
+    # Define highest price levels as resistance
+    df_new['candle_top'] = df_new[['open', 'close']].max(axis=1)
+
+    # Define constraints
     constraints = {
-        'type': 'ineq',  # For inequality (>= 0)
+        'type': 'ineq',  # Ensures line stays above candle tops
         'fun': constraint,
-        'args': (X.flatten(), df_new['candle_bottom'].values)
+        'args': (X.flatten(), df_new['candle_top'].values)
     }
 
     # Perform the optimization
     result = minimize(
         objective,
         initial_params,
-        args=(X.flatten(), df_new['candle_bottom'].values),
+        args=(X.flatten(), df_new['candle_top'].values),
         constraints=constraints,
         method='SLSQP'
     )
 
     optimized_slope, optimized_intercept = result.x
-
     return optimized_slope, optimized_intercept
 
 def visualize_trendline(df_new, slope, intercept):
+    """Plot candlestick chart with resistance trendline."""
     _ax = candlestick_ax(t=df_new['date'], o=df_new['open'], h=df_new['high'], l=df_new['low'], c=df_new['close'])
     X = df_new[['loc_index']].values  # Independent variable
-    best_fit_init = X*slope + intercept
-    plt.plot(X - min(X), best_fit_init[:,0], 'b-')
+    best_fit_init = X * slope + intercept
+    plt.plot(X - min(X), best_fit_init[:, 0], 'r-')  # Red line for resistance
 
-def safegraph(df_new, slope, intercept,name):
+def safegraph(df_new, slope, intercept, name):
+    """Save the resistance trendline chart in the alert folder."""
+    os.makedirs("alert", exist_ok=True)  # Ensure directory exists
     _ax = candlestick_ax(t=df_new['date'], o=df_new['open'], h=df_new['high'], l=df_new['low'], c=df_new['close'])
     X = df_new[['loc_index']].values  # Independent variable
-    best_fit_init = X*slope + intercept
-    plt.plot(X - min(X), best_fit_init[:,0], 'b-')
+    best_fit_init = X * slope + intercept
+    plt.plot(X - min(X), best_fit_init[:, 0], 'r-')  # Red line for resistance
     file_path = os.path.join("alert", name)
     plt.savefig(file_path)
+    plt.close()
 
 def candles_close_to_trendline(df_new, slope, intercept):
+    """Find the last value of the resistance trendline."""
     X = df_new[['loc_index']].values  # Independent variable
-    best_fit_init = X*slope + intercept
-    trendline_dist = df_new['candle_bottom'].values - best_fit_init[:,0]
-    return best_fit_init[-1,0]
+    best_fit_init = X * slope + intercept
+    return best_fit_init[-1, 0]
 
 def dist_from_trendline(df_new, slope, intercept, percentile=50):
+    """Calculate percentile-based distance from the resistance line."""
     X = df_new[['loc_index']].values  # Independent variable
-    best_fit_init = X*slope + intercept
-    trendline_dist = df_new['candle_bottom'].values - best_fit_init[:,0]
+    best_fit_init = X * slope + intercept
+    trendline_dist = df_new['candle_top'].values - best_fit_init[:, 0]
     return np.nanpercentile(trendline_dist, percentile)
 
-def support_by_hours(symbol,time):
-    symbol = symbol
+
+def resistance_by_hours(symbol,time):
+    #1 hour analysis
+    symbol = symbol  
     interval = '1m'  
     lookback = str(time)+' hours ago UTC'
 
@@ -199,7 +206,6 @@ def support_by_hours(symbol,time):
 
     #_ax = candlestick_ax(t=df['date'], o=df['open'], h=df['high'], l=df['low'], c=df['close'])
     df['mid'] = (df['open'] + df['close'])/2
-    slope_0, intercept_0 = get_best_fit_slope_intercept(df)
     slope_init, intercept_init = get_init_slope_intercept(df)
     slope_final, intercept_final = get_final_slope_intercept(df, slope_init, intercept_init)
     visualize_trendline(df, slope_final, intercept_final)
@@ -222,48 +228,32 @@ def support_by_hours(symbol,time):
         name = str(int(current)) +" at "+ str(int(support))+".png"
         safegraph(df, slope_final, intercept_final,name)
         #Send telegram message
-        message = symbol + " Chart at support level at "+ time +" hour tf"
+        message = symbol + " Chart at resistance level at "+ time +" hour tf, resistance at "+str(int(support))+" price at "+str(int(current))
         url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text={message}"
         r= requests.get(url)
         print(r.json())
 
         #Send telegram pictures
         files = {'photo': open('alert/'+ name, 'rb')}
-        resp = requests.post('https://api.telegram.org/bot7440240128:AAHGgBidb-mEjSOfzWXJ2hzY8UupUDlvKEs/sendPhoto?chat_id=5097888685', files=files)
+        resp = requests.post('https://api.telegram.org/bot7440240128:AAHGgBidb-mEjSOfzWXJ2hzY8UupUDlvKEs/sendPhoto?chat_id=-4629116369', files=files)
         print(resp.json())
 
+
 while True:
-    support_by_hours('BTCUSDT','1')
-    support_by_hours('BTCUSDT','2')
-    support_by_hours('BTCUSDT','3')
-    support_by_hours('BTCUSDT','4')
-    support_by_hours('BTCUSDT','5')
-    support_by_hours('BTCUSDT','6')
-    support_by_hours('BTCUSDT','7')
-    support_by_hours('BTCUSDT','8')
-    support_by_hours('BTCUSDT','9')
-    support_by_hours('BTCUSDT','10')
+    
+    resistance_by_hours('BTCUSDT','3')
+    resistance_by_hours('BTCUSDT','4')
+    resistance_by_hours('BTCUSDT','5')
+    resistance_by_hours('BTCUSDT','6')
+    resistance_by_hours('BTCUSDT','7')
+    resistance_by_hours('BTCUSDT','8')
+    resistance_by_hours('BTCUSDT','9')
+    resistance_by_hours('BTCUSDT','10')
 
-    support_by_hours('ETHUSDT','1')
-    support_by_hours('ETHUSDT','2')
-    support_by_hours('ETHUSDT','3')
-    support_by_hours('ETHUSDT','4')
-    support_by_hours('ETHUSDT','5')
-    support_by_hours('ETHUSDT','6')
-    support_by_hours('ETHUSDT','7')
-    support_by_hours('ETHUSDT','8')
-    support_by_hours('ETHUSDT','9')
-    support_by_hours('ETHUSDT','10')
+    # resistance_by_hours('ETHUSDT','1')
 
-    support_by_hours('SOLUSDT','1')
-    support_by_hours('SOLUSDT','2')
-    support_by_hours('SOLUSDT','3')
-    support_by_hours('SOLUSDT','4')
-    support_by_hours('SOLUSDT','5')
-    support_by_hours('SOLUSDT','6')
-    support_by_hours('SOLUSDT','7')
-    support_by_hours('SOLUSDT','8')
-    support_by_hours('SOLUSDT','9')
-    support_by_hours('SOLUSDT','10')
+    # resistance_by_hours('SOLUSDT','1')
+
+    time.sleep(60)
 
     #1 to 24 hours, week and month need to be added

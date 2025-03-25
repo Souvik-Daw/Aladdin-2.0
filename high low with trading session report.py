@@ -25,7 +25,7 @@ api_secret = 'xPqzQ87NvKFawOcYizIC81Ui3s7oQsBxPvXaD4t7LR85AtUhYeJL9XLnvwmoLPLN'
 
 #Telegram Bot
 TOKEN = "7440240128:AAHGgBidb-mEjSOfzWXJ2hzY8UupUDlvKEs"
-CHAT_ID = "5097888685"
+CHAT_ID = "-4629116369"
 
 # Initialize Binance client
 client = Client(api_key, api_secret)
