@@ -7,7 +7,7 @@ import requests
 import time
 import mplfinance as mpf
 import matplotlib.pyplot as plt
-from datetime import datetime
+from datetime import datetime, timedelta
 import yfinance as yf
 import matplotlib.pyplot as plt
 from scipy.stats import bernoulli
@@ -191,6 +191,139 @@ def dist_from_trendline(df_new, slope, intercept, percentile=50):
     return np.nanpercentile(trendline_dist, percentile)
 
 
+alert_data = {
+    "BTCUSDT":
+    {
+        "3":
+        {
+            "last_sent_time": None,
+            "tf":"3"
+        },
+        "4":
+        {
+            "last_sent_time": None,
+            "tf":"4"
+        },
+        "5":
+        {
+            "last_sent_time": None,
+            "tf":"5"
+        },
+        "6":
+        {
+            "last_sent_time": None,
+            "tf":"6"
+        },
+        "7":
+        {
+            "last_sent_time": None,
+            "tf":"7"
+        },
+        "8":
+        {
+            "last_sent_time": None,
+            "tf":"8"
+        },
+        "9":
+        {
+            "last_sent_time": None,
+            "tf":"9"
+        },
+        "10":
+        {
+            "last_sent_time": None,
+            "tf":"10"
+        }
+    },
+    "ETHUSDT":
+    {
+        "3":
+        {
+            "last_sent_time": None,
+            "tf":"3"
+        },
+        "4":
+        {
+            "last_sent_time": None,
+            "tf":"4"
+        },
+        "5":
+        {
+            "last_sent_time": None,
+            "tf":"5"
+        },
+        "6":
+        {
+            "last_sent_time": None,
+            "tf":"6"
+        },
+        "7":
+        {
+            "last_sent_time": None,
+            "tf":"7"
+        },
+        "8":
+        {
+            "last_sent_time": None,
+            "tf":"8"
+        },
+        "9":
+        {
+            "last_sent_time": None,
+            "tf":"9"
+        },
+        "10":
+        {
+            "last_sent_time": None,
+            "tf":"10"
+        }
+    },
+    "SOLUSDT":
+    {
+        "3":
+        {
+            "last_sent_time": None,
+            "tf":"3"
+        },
+        "4":
+        {
+            "last_sent_time": None,
+            "tf":"4"
+        },
+        "5":
+        {
+            "last_sent_time": None,
+            "tf":"5"
+        },
+        "6":
+        {
+            "last_sent_time": None,
+            "tf":"6"
+        },
+        "7":
+        {
+            "last_sent_time": None,
+            "tf":"7"
+        },
+        "8":
+        {
+            "last_sent_time": None,
+            "tf":"8"
+        },
+        "9":
+        {
+            "last_sent_time": None,
+            "tf":"9"
+        },
+        "10":
+        {
+            "last_sent_time": None,
+            "tf":"10"
+        }
+    }
+}
+
+
 def resistance_by_hours(symbol,time):
     #1 hour analysis
     symbol = symbol  
@@ -208,14 +341,14 @@ def resistance_by_hours(symbol,time):
     df['mid'] = (df['open'] + df['close'])/2
     slope_init, intercept_init = get_init_slope_intercept(df)
     slope_final, intercept_final = get_final_slope_intercept(df, slope_init, intercept_init)
-    visualize_trendline(df, slope_final, intercept_final)
+    
 
     support = candles_close_to_trendline(df, slope_final, intercept_final)
     current = df.iloc[-1,4]
 
     difference = 0
     if (symbol == 'BTCUSDT'):
-        difference = 100
+        difference = 50
     elif(symbol == 'ETHUSDT'):
         difference = 20
     else:
@@ -224,19 +357,30 @@ def resistance_by_hours(symbol,time):
     print(difference)
 
     if (abs(current-support))<difference:
-        print("close")
-        name = str(int(current)) +" at "+ str(int(support))+".png"
-        safegraph(df, slope_final, intercept_final,name)
-        #Send telegram message
-        message = symbol + " Chart at resistance level at "+ time +" hour tf, resistance at "+str(int(support))+" price at "+str(int(current))
-        url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text={message}"
-        r= requests.get(url)
-        print(r.json())
+        current_time = datetime.now()
+        last_sent_time = alert_data[str(symbol)][str(time)]["last_sent_time"]
 
-        #Send telegram pictures
-        files = {'photo': open('alert/'+ name, 'rb')}
-        resp = requests.post('https://api.telegram.org/bot7440240128:AAHGgBidb-mEjSOfzWXJ2hzY8UupUDlvKEs/sendPhoto?chat_id=-4629116369', files=files)
-        print(resp.json())
+        if last_sent_time:
+            last_sent_time = datetime.strptime(last_sent_time, "%Y-%m-%d %H:%M:%S")
+
+        print("close")
+
+        if last_sent_time is None or (current_time - last_sent_time) >= timedelta(minutes=10):
+            name = str(int(current)) +" at "+ str(int(support))+".png"
+            visualize_trendline(df, slope_final, intercept_final)
+            safegraph(df, slope_final, intercept_final,name)
+            #Send telegram message
+            message = symbol + " Chart at resistance \nAt Level "+ time +" hour tf \nResistance at "+str(int(support))+"\nPrice at "+str(int(current))+"\nDifference is "+str(int(abs(current-support)))
+            url = f"https://api.telegram.org/bot{TOKEN}/sendMessage?chat_id={CHAT_ID}&text={message}"
+            r= requests.get(url)
+            print(r.json())
+
+            #Send telegram pictures
+            files = {'photo': open('alert/'+ name, 'rb')}
+            resp = requests.post('https://api.telegram.org/bot7440240128:AAHGgBidb-mEjSOfzWXJ2hzY8UupUDlvKEs/sendPhoto?chat_id=-4629116369', files=files)
+            print(resp.json())
+
+            alert_data[str(symbol)][time]["last_sent_time"] = current_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
 while True:
